@@ -1,0 +1,9 @@
+version: '3.8'
+services:
+  slack-notifier:
+    build: .
+    ports:
+      - "8004:8000"
+    environment:
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
+    restart: unless-stopped
