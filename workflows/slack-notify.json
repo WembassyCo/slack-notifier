@@ -1,0 +1,133 @@
+{
+  "name": "Slack Notifier",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "slack-notify",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-slack-notify",
+      "name": "Slack Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "slack-notify"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Validate incoming request\nconst input = $input.first().json.body;\n\nif (!input.channel || !input.text) {\n  throw new Error('Missing required fields: channel and text');\n}\n\nreturn [{\n  json: {\n    channel: input.channel,\n    text: input.text,\n    validated: true\n  }\n}];"
+      },
+      "id": "validate-input",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "channel": "={{ $json.channel }}",
+        "text": "={{ $json.text }}",
+        "options": {}
+      },
+      "id": "slack-send",
+      "name": "Send Slack Message",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Slack notification sent\",\n  \"channel\": \"{{ $json.channel }}\",\n  \"timestamp\": \"{{ $now }}\"\n}",
+        "statusCode": 200
+      },
+      "id": "respond-success",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        850,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"message\": \"{{ $json.message || 'Unknown error' }}\",\n  \"timestamp\": \"{{ $now }}\"\n}",
+        "statusCode": 400
+      },
+      "id": "respond-error",
+      "name": "Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        850,
+        500
+      ]
+    }
+  ],
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "timezone": "America/Chicago"
+  },
+  "connections": {
+    "Slack Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Send Slack Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Slack Message": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "tags": [
+    {
+      "name": "notification",
+      "id": "tag-notification-001"
+    },
+    {
+      "name": "slack",
+      "id": "tag-slack-001"
+    }
+  ]
+}

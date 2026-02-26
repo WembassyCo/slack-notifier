@@ -1,9 +1,35 @@
 version: '3.8'
+
 services:
-  slack-notifier:
-    build: .
-    ports:
-      - "8004:8000"
+  n8n:
+    image: n8nio/n8n:latest
+    restart: always
     environment:
-      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
-    restart: unless-stopped
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - N8N_PORT=5678
+      - WEBHOOK_URL=${WEBHOOK_URL:-http://localhost:5678}
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE:-America/Chicago}
+      - N8N_LOG_LEVEL=${N8N_LOG_LEVEL:-info}
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./workflows:/workflows:ro
+    networks:
+      - n8n-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  n8n_data:
+    driver: local
+
+networks:
+  n8n-network:
+    driver: bridge
